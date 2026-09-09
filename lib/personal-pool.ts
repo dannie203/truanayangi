@@ -26,3 +26,33 @@ export function personalSelector(population: Food[], target: number) {
  const feasible=Math.max(Math.min(...population.map(f=>f.price)),Math.min(target,Math.max(...population.map(f=>f.price))));
  return createFoodSelector(population,feasible);
 }
+export function encodePoolShare(profile: PoolProfile): string {
+ const payload = { d: profile.disabled, c: profile.custom.map(x => [x.name, x.price, x.veg ? 1 : 0]) };
+ const str = JSON.stringify(payload);
+ if (typeof Buffer !== 'undefined') return Buffer.from(str, 'utf-8').toString('base64url');
+ const b64 = btoa(unescape(encodeURIComponent(str)));
+ return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+export function decodePoolShare(hashOrRaw: string): PoolProfile | null {
+ try {
+  const clean = hashOrRaw.replace(/^#?pool=/, '').trim();
+  if (!clean) return null;
+  let jsonStr = '';
+  if (typeof Buffer !== 'undefined') {
+   jsonStr = Buffer.from(clean, 'base64url').toString('utf-8');
+  } else {
+   const pad = clean.length % 4 === 0 ? '' : '='.repeat(4 - (clean.length % 4));
+   const b64 = (clean + pad).replace(/-/g, '+').replace(/_/g, '/');
+   jsonStr = decodeURIComponent(escape(atob(b64)));
+  }
+  const p = JSON.parse(jsonStr);
+  if (!p || typeof p !== 'object' || !Array.isArray(p.d) || !Array.isArray(p.c)) return null;
+  const custom: CustomFood[] = p.c.map((item: unknown) => {
+   if (!Array.isArray(item) || typeof item[0] !== 'string' || typeof item[1] !== 'number') throw new Error('bad');
+   return { id: crypto.randomUUID(), name: item[0], price: item[1], veg: Boolean(item[2]) };
+  });
+  return validateProfile({ disabled: p.d, custom, revision: 0 });
+ } catch {
+  return null;
+ }
+}

@@ -5,7 +5,7 @@ import { copy, foodName, foodSubtitle, priceLabel, type Language } from '@/lib/i
 import { useGlobalSpinCount } from '@/hooks/use-global-spin-count';
 import { AccountPanel, AdminPanel } from '@/components/account-panel';
 import { useAccount } from '@/hooks/use-account';
-import { personalFoods, personalSelector } from '@/lib/personal-pool';
+import { personalFoods, personalSelector, decodePoolShare } from '@/lib/personal-pool';
 import { CaseAudio } from '@/lib/case-audio';
 import { flushSync } from 'react-dom';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -44,7 +44,8 @@ export default function Home(){
  const [language,setLanguage]=useState<Language>('vi');
  const account=useAccount();
  const [adminView,setAdminView]=useState(false);
- useEffect(()=>{const update=()=>setAdminView(window.location.hash==='#admin');update();window.addEventListener('hashchange',update);return()=>window.removeEventListener('hashchange',update)},[]);
+ const [sharedNotice,setSharedNotice]=useState(false);
+ useEffect(()=>{const update=()=>{setAdminView(window.location.hash==='#admin');if(window.location.hash.startsWith('#pool=')){const shared=decodePoolShare(window.location.hash);if(shared){void account.save(shared);setSharedNotice(true)}}};update();window.addEventListener('hashchange',update);return()=>window.removeEventListener('hashchange',update)},[account.save]);
  const [githubStars,setGithubStars]=useState<number|null>(null);
  const [budget,setBudget]=useState('50'),[custom,setCustom]=useState('50'),[veg,setVeg]=useState(false),[sound,setSound]=useState(true),[spinning,setSpinning]=useState(false),[result,setResult]=useState<Food|null>(null),[revealed,setRevealed]=useState(false);
  const [reel,setReel]=useState(()=>foods.slice(0,12).map((food,id)=>({food,id}))),[moving,setMoving]=useState(false);
@@ -130,6 +131,7 @@ export default function Home(){
  return <div className="site-shell">
  <header><a href={`${basePath}/`} className="brand"><span className="brand-icon"><Utensils size={21}/></span>truanayangi<span className="brand-dot">.</span></a><div className="header-actions"><AccountPanel account={account} language={language} disabled={spinning}/><button className="language-button" onClick={()=>changeLanguage(language==='vi'?'en':'vi')} aria-label={t.language}>{language==='vi'?'EN':'VI'}</button><button className="sound-button" onClick={()=>{audio.current?.setMuted(sound);setSound(!sound)}} aria-label={sound?t.turnSoundOff:t.turnSoundOn}>{sound?<Volume2 size={18}/>:<VolumeX size={18}/>}<span>{sound?t.soundOn:t.soundOff}</span></button><a className="github-button" href="https://github.com/nagisanzenin/truanayangi" target="_blank" rel="noreferrer" aria-label={`${t.github}, ${githubStars??t.starsPending} stars`}><svg className="github-mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.71.5.1.68-.22.68-.49v-1.91c-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .08 1.53 1.06 1.53 1.06.9 1.57 2.35 1.12 2.92.86.09-.66.35-1.12.64-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.96a9.3 9.3 0 0 1 2.5.35c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.89v2.8c0 .27.18.59.69.49A10.25 10.25 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z"/></svg><span className="github-label">GitHub</span><span className="github-stars"><Star size={13} fill="currentColor"/>{githubStars===null?'—':new Intl.NumberFormat(language==='vi'?'vi-VN':'en-US').format(githubStars)}</span></a></div></header>
  <main>{adminView?<AdminPanel account={account} language={language} globalSpins={globalSpins}/>:<><div className="intro"><h1>{t.title}</h1></div>
+ {sharedNotice&&<p className="account-message" style={{textAlign:'center',marginBottom:14}}>{language==='vi'?'★ Đang dùng pool món ăn từ link chia sẻ':'★ Using shared food pool from link'}</p>}
  {!eligible.length&&<p className="account-message">{language==='vi'?'Pool không có món phù hợp. Tắt bộ lọc chay hoặc thêm món.':'No matching dishes. Turn off the vegetarian filter or add dishes.'}</p>}
  {counterEnabled&&<p className="global-counter" title={t.counterTitle}>{t.counterPrefix} <strong>{globalSpins===null?'—':new Intl.NumberFormat(language==='vi'?'vi-VN':'en-US').format(globalSpins)}</strong> {t.counterSuffix}</p>}
  <section className="case-panel" aria-label={t.caseLabel}>
