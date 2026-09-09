@@ -32,4 +32,4 @@ npm run build
 
 ### Find or order the chosen meal
 
-The result links to Google Maps. On small screens or touch devices, a green GrabFood button opens the Vietnamese GrabFood search with the original dish name (including custom dishes). It uses the HTTPS search link tested on a real phone; app handoff depends on Grab and browser/device settings. There is no forced timer redirect, location request, or checkout integration. Google Maps remains available.
+The result links to Google Maps. On small screens or touch devices, green GrabFood and orange ShopeeFood buttons open Vietnamese food delivery searches with the original dish name (including custom dishes). It uses the HTTPS search links tested on mobile browsers; app handoff depends on Grab/Shopee and browser/device settings. There is no forced timer redirect, location request, or checkout integration. Google Maps remains available.
